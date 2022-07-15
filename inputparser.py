@@ -1,8 +1,10 @@
+from ast import Not
 import os, sys, getopt
 
 KEY_ID      = "[ID]"
 KEY_PRIMARY = "[PRIMARY]"
 KEY_EVOLUTIONARY = "[EVOLUTIONARY]"
+KEY_MASK = "[MASK]"
 
 
 def write_to_file(outputFile, lineContent):
@@ -17,15 +19,21 @@ def prepare_id_line(idItems):
 def parse_input(inputFile, outputFile):
    try:
       isData = False
+      isMask = False
       idItems = []
       dataRows = []
       with open(inputFile, 'r', encoding='UTF-8') as file:
-         while (l := file.readline().rstrip()):
-            if KEY_ID in l or KEY_PRIMARY in l:
+         while (l := file.readline()):
+            l = l.rstrip()
+            if l in ['', '\n', '\r\n']:
+               pass
+            elif KEY_ID in l or KEY_PRIMARY in l:
                isData = False
+               isMask = False
                dataRows.append(l)
             elif KEY_EVOLUTIONARY in l:
                isData = True
+               isMask = False
                dataRows.append(l)
                write_to_file(outputFile, prepare_id_line(idItems))
                idItems = []
@@ -37,10 +45,13 @@ def parse_input(inputFile, outputFile):
                   idItems.append(l)
                   dataRows.append(l)
                else:
-                  if "+" in l:
-                     l += '"'
-                  write_to_file(outputFile, l)
-               
+                  if KEY_MASK in l:
+                     isMask = True
+                     write_to_file(outputFile, l)
+                  else:
+                     if isMask and ("+" in l or "-" in l):
+                        l += '"'
+                     write_to_file(outputFile, l)
    except Exception as ex:
       print(ex)
       sys.exit(2)
